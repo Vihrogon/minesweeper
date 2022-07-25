@@ -1,6 +1,77 @@
-function safePosition(width, height, position) {
-    let result = [0,0];
-    // return random vector in range
+/* This could be migrated to TypeScript
+Class Position {
+    x: Number, // width
+    y: Number // height
+}
+Accessed in Matrix[y][x]
+`matrix[position[1]][position[0]]` */
+
+/**
+ * Returns a random position inside the given width and height
+ * @param {Number} width 
+ * @param {Number} height 
+ * @returns {Array[Number]}
+ */
+function randomPosition(width, height) {
+    return [
+        Math.floor(Math.random() * width),
+        Math.floor(Math.random() * height),
+    ];
+}
+
+/**
+ * Returns an array with all valid neighboring positions
+ * @param {Number} width 
+ * @param {Number} height 
+ * @param {Array[Number]} position 
+ * @returns {Array[Array[Number]]}
+ */
+function neighbors(width, height, position) {
+    result = [];
+
+    if (position[0] - 1 >= 0 && position[1] - 1 >= 0)          {result.push([position[0] - 1, position[1] - 1])};
+    if (position[0] - 1 >= 0)                                  {result.push([position[0] - 1, position[1]    ])};
+    if (position[0] - 1 >= 0 && position[1] + 1 <= height)     {result.push([position[0] - 1, position[1] + 1])};
+    if (position[1] - 1 >= 0)                                  {result.push([position[0]    , position[1] - 1])};
+    if (true)                                                  {result.push([position[0]    , position[1]    ])};
+    if (position[1] + 1 <= height)                             {result.push([position[0]    , position[1] + 1])};
+    if (position[0] + 1 <= width && position[1] - 1 >= 0)      {result.push([position[0] + 1, position[1] - 1])};
+    if (position[0] + 1 <= width)                              {result.push([position[0] + 1, position[1]    ])};
+    if (position[0] + 1 <= width && position[1] + 1 <= height) {result.push([position[0] + 1, position[1] + 1])};
+
+    return result;
+}
+
+/**
+ * returns an array of unique positions with given length
+ * that are not inside a 3x3 square around the given position
+ * @param {Array[Array[Number]]} matrix
+ * @param {Number} width
+ * @param {Number} height
+ * @param {Array[Number]} position
+ * @param {Number} mines
+ * @returns {Array[Array[Number]]} Array of positions
+ */
+function fillMines(matrix, width, height, position, mines) {
+    let result = matrix;
+    let positionsToAvoid = neighbors(width, height, position);
+
+    while (mines) {
+        let newPosition = randomPosition(width, height);
+
+        if (
+            positionsToAvoid.every(function (value) {
+                return (
+                    value[0] !== newPosition[0] || value[1] !== newPosition[1]
+                );
+            })
+        ) {
+            result[newPosition[1]][newPosition[0]] = 9;
+            positionsToAvoid.push(newPosition);
+            mines--;
+        }
+    }
+
     return result;
 }
 
@@ -29,17 +100,8 @@ function populateMatrix(matrix, position, mines) {
     let result = matrix;
     let width = matrix[0].length;
     let height = matrix.length;
-    let newPosition;
 
-    while (mines) {
-        // todo make array of positions
-        newPosition = safePosition(width, height, position);
-
-        // todo forEach
-        result[newPosition[1]][newPosition[0]] = 9;
-        mines--;
-    }
-
+    result = fillMines(result, width, height, position, mines);
     result = countMines(result);
     result = openCell(result, position);
 
@@ -49,8 +111,8 @@ function populateMatrix(matrix, position, mines) {
 function minesweeper(matrix, position, action, mines) {
     let result = {
         matrix: [],
-        message: ''
-    }
+        message: "",
+    };
 
     // validate the inputs
 
@@ -66,4 +128,36 @@ function minesweeper(matrix, position, action, mines) {
     return result;
 }
 
-console.log(minesweeper([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], [0, 0], 0, 5));
+console.log(
+    'minesweeper() =>',
+    minesweeper(
+        [
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+        ],
+        [0, 0],
+        0,
+        5
+    )
+);
+
+
+console.log(
+    'fillMines() =>',
+    fillMines(
+        [
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+        ],
+        5,
+        5,
+        [1, 1],
+        5
+    )
+);
