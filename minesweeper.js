@@ -6,6 +6,8 @@ Class Position {
 Accessed in Matrix[y][x]
 `matrix[position[1]][position[0]]` */
 
+const MINE = 9;
+
 /**
  * Returns a random position inside the given width and height
  * @param {Number} width 
@@ -29,15 +31,15 @@ function randomPosition(width, height) {
 function neighbors(width, height, position) {
     result = [];
 
-    if (position[0] - 1 >= 0 && position[1] - 1 >= 0)          {result.push([position[0] - 1, position[1] - 1])};
-    if (position[0] - 1 >= 0)                                  {result.push([position[0] - 1, position[1]    ])};
-    if (position[0] - 1 >= 0 && position[1] + 1 <= height)     {result.push([position[0] - 1, position[1] + 1])};
-    if (position[1] - 1 >= 0)                                  {result.push([position[0]    , position[1] - 1])};
-    if (true)                                                  {result.push([position[0]    , position[1]    ])};
-    if (position[1] + 1 <= height)                             {result.push([position[0]    , position[1] + 1])};
-    if (position[0] + 1 <= width && position[1] - 1 >= 0)      {result.push([position[0] + 1, position[1] - 1])};
-    if (position[0] + 1 <= width)                              {result.push([position[0] + 1, position[1]    ])};
-    if (position[0] + 1 <= width && position[1] + 1 <= height) {result.push([position[0] + 1, position[1] + 1])};
+    if (position[0] - 1 >= 0 && position[1] - 1 >= 0)        {result.push([position[0] - 1, position[1] - 1])};
+    if (position[0] - 1 >= 0)                                {result.push([position[0] - 1, position[1]    ])};
+    if (position[0] - 1 >= 0 && position[1] + 1 < height)    {result.push([position[0] - 1, position[1] + 1])};
+    if (position[1] - 1 >= 0)                                {result.push([position[0]    , position[1] - 1])};
+    if (true)                                                {result.push([position[0]    , position[1]    ])};
+    if (position[1] + 1 < height)                            {result.push([position[0]    , position[1] + 1])};
+    if (position[0] + 1 < width && position[1] - 1 >= 0)     {result.push([position[0] + 1, position[1] - 1])};
+    if (position[0] + 1 < width)                             {result.push([position[0] + 1, position[1]    ])};
+    if (position[0] + 1 < width && position[1] + 1 < height) {result.push([position[0] + 1, position[1] + 1])};
 
     return result;
 }
@@ -66,7 +68,7 @@ function fillMines(matrix, width, height, position, mines) {
                 );
             })
         ) {
-            result[newPosition[1]][newPosition[0]] = 9;
+            result[newPosition[1]][newPosition[0]] = MINE;
             positionsToAvoid.push(newPosition);
             mines--;
         }
@@ -81,14 +83,20 @@ function openCell(matrix, position) {
     return result;
 }
 
-function countMines(matrix) {
+function countMines(matrix, width, height) {
     let result = matrix;
 
     result.forEach(function (row, y) {
         row.forEach(function (cell, x) {
             if (cell !== 9) {
-                // todo
-                result[y][x] += 1;
+                let neighboringCells = neighbors(width, height, [x, y]);
+                let count = 0;
+                neighboringCells.forEach(function (position) {
+                    if (result[position[1]][position[0]] === MINE) {
+                        count += 1;
+                    }
+                });
+                result[y][x] = count;
             }
         });
     });
@@ -102,8 +110,11 @@ function populateMatrix(matrix, position, mines) {
     let height = matrix.length;
 
     result = fillMines(result, width, height, position, mines);
-    result = countMines(result);
+    console.log('fillMines() =>', result);
+    result = countMines(result, width, height);
+    console.log('countMines() =>', result);
     result = openCell(result, position);
+    console.log('openCell() =>', result);
 
     return result;
 }
@@ -140,24 +151,6 @@ console.log(
         ],
         [0, 0],
         0,
-        5
-    )
-);
-
-
-console.log(
-    'fillMines() =>',
-    fillMines(
-        [
-            [0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0],
-        ],
-        5,
-        5,
-        [1, 1],
         5
     )
 );
