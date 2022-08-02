@@ -6,6 +6,8 @@
  * @property {number} mines
  * @property {Position} position
  * @property {Action} action
+ * @property {Boolean} gameOver
+ * @property {number} score
  * @property {string} message
  */
 
@@ -33,7 +35,10 @@
  * @typedef {0 | 1 | 2} Action
  */
 
+const EMPTY = 0;
 const MINE = 9;
+const OPEN = 10;
+const FLAG = 20;
 
 /**
  * Returns a random position within the given size
@@ -60,7 +65,7 @@ function neighbors(size, position) {
     if (position.x - 1 >= 0)                                {result.push({x: position.x - 1, y: position.y    })};
     if (position.x - 1 >= 0 && position.y + 1 < size.h)     {result.push({x: position.x - 1, y: position.y + 1})};
     if (position.y - 1 >= 0)                                {result.push({x: position.x    , y: position.y - 1})};
-    if (true)                                               {result.push({x: position.x    , y: position.y    })};
+    // if (true)                                               {result.push({x: position.x    , y: position.y    })};
     if (position.y + 1 < size.h)                            {result.push({x: position.x    , y: position.y + 1})};
     if (position.x + 1 < size.w && position.y - 1 >= 0)     {result.push({x: position.x + 1, y: position.y - 1})};
     if (position.x + 1 < size.w)                            {result.push({x: position.x + 1, y: position.y    })};
@@ -101,20 +106,6 @@ function fillMines(matrix, size, mines, position) {
     return result;
 }
 
-function openCell(state) {
-    let result = state;
-    
-    if (state.matrix[state.position.y][state.position.x] === MINE) {
-        // game over
-    } else if (0 < state.matrix[state.position.y][state.position.x] < MINE) {
-        // open cell
-    } else if (state.matrix[state.position.y][state.position.x] === 0) {
-        // open surrounding cells
-    }
-
-    return result;
-}
-
 /**
  * Returns a Matrix with updated amounts of neghboring mines
  * @param {Matrix} matrix
@@ -142,6 +133,50 @@ function countMines(matrix, size) {
     return result;
 }
 
+function openCell(matrix, position) {
+    let result = matrix;
+
+    result[position.y][position.x] += OPEN;
+
+    return result;
+}
+
+function opened(value) {
+    return MINE < value && value <= OPEN + MINE;
+}
+
+function flagged(value) {
+    return OPEN + MINE < value && value <= FLAG + MINE; 
+}
+
+function handleOpen(matrix, size, position) {
+    let result = {
+        matrix,
+        size,
+        position
+    };
+    
+    if (!opened(result.matrix[result.position.y][result.position.x]) &&
+        !flagged(result.matrix[result.position.y][result.position.x])) {
+        if (result.matrix[result.position.y][result.position.x] === MINE) {
+            result.gameOver = true;
+            result.message = 'You have lost the game';
+        } else if (result.matrix[result.position.y][result.position.x] > EMPTY &&
+            result.matrix[result.position.y][result.position.x] < MINE) {
+            result.matrix = openCell(result.matrix, result.position);
+        } else if (result.matrix[result.position.y][result.position.x] === EMPTY) {
+            // open neighboring cells
+            result.matrix = openCell(result.matrix, result.position);
+            let neighboringCells = neighbors(result.size, result.position);
+            neighboringCells.forEach(function (neighborPosition) {
+                result = handleOpen(result.matrix, result.size, neighborPosition);
+            });
+        }
+    }
+
+    return result;
+}
+
 /**
  * The entry point to the minesweeper game
  * @param {State} state 
@@ -155,7 +190,7 @@ function minesweeper(state) {
     if (result.action === 0) {// equivalent to new game
         result.matrix = fillMines(result.matrix, result.size, result.mines, result.position);
         result.matrix = countMines(result.matrix, result.size);
-        result = openCell(result);
+        result = handleOpen(result.matrix, result.size, result.position);
 
         console.log('fillMines() =>', result);
         console.log('countMines() =>', result);
@@ -181,6 +216,8 @@ let state = {
     mines: 5,
     position: {x: 0, y: 0},
     action: 0,
+    gameOver: false,
+    score: 0,
     message: ''
 }
 
