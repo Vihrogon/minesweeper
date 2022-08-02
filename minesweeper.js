@@ -1,45 +1,75 @@
-/* This could be migrated to TypeScript
-Class Position {
-    x: Number, // width
-    y: Number // height
-}
-Accessed in Matrix[y][x]
-`matrix[position[1]][position[0]]` */
-
-const MINE = 9;
+/**
+ * State
+ * @typedef {Object} State
+ * @property {Matrix} matrix
+ * @property {Size} size
+ * @property {number} mines
+ * @property {Position} position
+ * @property {Action} action
+ * @property {Boolean} gameOver
+ * @property {number} score
+ * @property {string} message
+ */
 
 /**
- * Returns a random position inside the given width and height
- * @param {Number} width 
- * @param {Number} height 
- * @returns {Array[Number]}
+ * Matrix
+ * @typedef {Array<Array<number>>} Matrix
  */
-function randomPosition(width, height) {
-    return [
-        Math.floor(Math.random() * width),
-        Math.floor(Math.random() * height),
-    ];
+
+/**
+ * Size
+ * @typedef {Object} Size
+ * @property {number} w - width
+ * @property {number} h - height
+ */
+
+/**
+ * Position
+ * @typedef {Object} Position
+ * @property {number} x - x axis
+ * @property {number} y - y axis
+ */
+
+/**
+ * Action
+ * @typedef {0 | 1 | 2} Action
+ */
+
+const EMPTY = 0;
+const MINE = 9;
+const OPEN = 10;
+const FLAG = 20;
+
+/**
+ * Returns a random position within the given size
+ * @param {Size} size
+ * @returns {Position}
+ */
+function randomPosition(size) {
+    return {
+        x: Math.floor(Math.random() * size.w),
+        y: Math.floor(Math.random() * size.h)
+    };
 }
 
 /**
  * Returns an array with all valid neighboring positions
- * @param {Number} width 
- * @param {Number} height 
- * @param {Array[Number]} position 
- * @returns {Array[Array[Number]]}
+ * @param {Size} size 
+ * @param {Position} position 
+ * @returns {Array<Position>}
  */
-function neighbors(width, height, position) {
+function neighbors(size, position) {
     result = [];
 
-    if (position[0] - 1 >= 0 && position[1] - 1 >= 0)        {result.push([position[0] - 1, position[1] - 1])};
-    if (position[0] - 1 >= 0)                                {result.push([position[0] - 1, position[1]    ])};
-    if (position[0] - 1 >= 0 && position[1] + 1 < height)    {result.push([position[0] - 1, position[1] + 1])};
-    if (position[1] - 1 >= 0)                                {result.push([position[0]    , position[1] - 1])};
-    if (true)                                                {result.push([position[0]    , position[1]    ])};
-    if (position[1] + 1 < height)                            {result.push([position[0]    , position[1] + 1])};
-    if (position[0] + 1 < width && position[1] - 1 >= 0)     {result.push([position[0] + 1, position[1] - 1])};
-    if (position[0] + 1 < width)                             {result.push([position[0] + 1, position[1]    ])};
-    if (position[0] + 1 < width && position[1] + 1 < height) {result.push([position[0] + 1, position[1] + 1])};
+    if (position.x - 1 >= 0 && position.y - 1 >= 0)         {result.push({x: position.x - 1, y: position.y - 1})};
+    if (position.x - 1 >= 0)                                {result.push({x: position.x - 1, y: position.y    })};
+    if (position.x - 1 >= 0 && position.y + 1 < size.h)     {result.push({x: position.x - 1, y: position.y + 1})};
+    if (position.y - 1 >= 0)                                {result.push({x: position.x    , y: position.y - 1})};
+    // if (true)                                               {result.push({x: position.x    , y: position.y    })};
+    if (position.y + 1 < size.h)                            {result.push({x: position.x    , y: position.y + 1})};
+    if (position.x + 1 < size.w && position.y - 1 >= 0)     {result.push({x: position.x + 1, y: position.y - 1})};
+    if (position.x + 1 < size.w)                            {result.push({x: position.x + 1, y: position.y    })};
+    if (position.x + 1 < size.w && position.y + 1 < size.h) {result.push({x: position.x + 1, y: position.y + 1})};
 
     return result;
 }
@@ -47,28 +77,27 @@ function neighbors(width, height, position) {
 /**
  * returns an array of unique positions with given length
  * that are not inside a 3x3 square around the given position
- * @param {Array[Array[Number]]} matrix
- * @param {Number} width
- * @param {Number} height
- * @param {Array[Number]} position
- * @param {Number} mines
- * @returns {Array[Array[Number]]} Array of positions
+ * @param {Matrix} matrix
+ * @param {Size} size
+ * @param {Position} position
+ * @param {number} mines
+ * @returns {Matrix}
  */
-function fillMines(matrix, width, height, position, mines) {
+function fillMines(matrix, size, mines, position) {
     let result = matrix;
-    let positionsToAvoid = neighbors(width, height, position);
+    let positionsToAvoid = neighbors(size, position);
 
     while (mines) {
-        let newPosition = randomPosition(width, height);
+        let newPosition = randomPosition(size);
 
         if (
-            positionsToAvoid.every(function (value) {
+            positionsToAvoid.every(function (positionToAvoid) {
                 return (
-                    value[0] !== newPosition[0] || value[1] !== newPosition[1]
+                    positionToAvoid.x !== newPosition.x || positionToAvoid.y !== newPosition.y
                 );
             })
         ) {
-            result[newPosition[1]][newPosition[0]] = MINE;
+            result[newPosition.y][newPosition.x] = MINE;
             positionsToAvoid.push(newPosition);
             mines--;
         }
@@ -77,22 +106,22 @@ function fillMines(matrix, width, height, position, mines) {
     return result;
 }
 
-function openCell(matrix, position) {
-    let result = matrix;
-    // return recalculated matrix
-    return result;
-}
-
-function countMines(matrix, width, height) {
+/**
+ * Returns a Matrix with updated amounts of neghboring mines
+ * @param {Matrix} matrix
+ * @param {Size} size
+ * @returns 
+ */
+function countMines(matrix, size) {
     let result = matrix;
 
     result.forEach(function (row, y) {
         row.forEach(function (cell, x) {
-            if (cell !== 9) {
-                let neighboringCells = neighbors(width, height, [x, y]);
+            if (cell !== MINE) {
+                let neighboringCells = neighbors(size, {x, y});
                 let count = 0;
                 neighboringCells.forEach(function (position) {
-                    if (result[position[1]][position[0]] === MINE) {
+                    if (result[position.y][position.x] === MINE) {
                         count += 1;
                     }
                 });
@@ -104,53 +133,94 @@ function countMines(matrix, width, height) {
     return result;
 }
 
-function populateMatrix(matrix, position, mines) {
+function openCell(matrix, position) {
     let result = matrix;
-    let width = matrix[0].length;
-    let height = matrix.length;
 
-    result = fillMines(result, width, height, position, mines);
-    console.log('fillMines() =>', result);
-    result = countMines(result, width, height);
-    console.log('countMines() =>', result);
-    result = openCell(result, position);
-    console.log('openCell() =>', result);
+    result[position.y][position.x] += OPEN;
 
     return result;
 }
 
-function minesweeper(matrix, position, action, mines) {
+function opened(value) {
+    return MINE < value && value <= OPEN + MINE;
+}
+
+function flagged(value) {
+    return OPEN + MINE < value && value <= FLAG + MINE; 
+}
+
+function handleOpen(matrix, size, position) {
     let result = {
-        matrix: [],
-        message: "",
+        matrix,
+        size,
+        position
     };
+    
+    if (!opened(result.matrix[result.position.y][result.position.x]) &&
+        !flagged(result.matrix[result.position.y][result.position.x])) {
+        if (result.matrix[result.position.y][result.position.x] === MINE) {
+            result.gameOver = true;
+            result.message = 'You have lost the game';
+        } else if (result.matrix[result.position.y][result.position.x] > EMPTY &&
+            result.matrix[result.position.y][result.position.x] < MINE) {
+            result.matrix = openCell(result.matrix, result.position);
+        } else if (result.matrix[result.position.y][result.position.x] === EMPTY) {
+            // open neighboring cells
+            result.matrix = openCell(result.matrix, result.position);
+            let neighboringCells = neighbors(result.size, result.position);
+            neighboringCells.forEach(function (neighborPosition) {
+                result = handleOpen(result.matrix, result.size, neighborPosition);
+            });
+        }
+    }
+
+    return result;
+}
+
+/**
+ * The entry point to the minesweeper game
+ * @param {State} state 
+ * @returns {State}
+ */
+function minesweeper(state) {
+    let result = state;
 
     // validate the inputs
 
-    if (action === 0) {
-        // populate given matrix with a number of mines, avoiding the given position
-        result.matrix = populateMatrix(matrix, position, mines);
-    } else if (action === 1) {
+    if (result.action === 0) {// equivalent to new game
+        result.matrix = fillMines(result.matrix, result.size, result.mines, result.position);
+        result.matrix = countMines(result.matrix, result.size);
+        result = handleOpen(result.matrix, result.size, result.position);
+
+        console.log('fillMines() =>', result);
+        console.log('countMines() =>', result);
+        console.log('openCell() =>', result);
+    } else if (result.action === 1) {// equivalent to open cell
         // calculate a left click on the given position
-    } else if (action === 2) {
+    } else if (result.action === 2) {// equivalent to flag or chord depending on position
         // calculate a right click on the given position
     }
 
     return result;
 }
 
-console.log(
-    'minesweeper() =>',
-    minesweeper(
-        [
-            [0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0],
-        ],
-        [0, 0],
-        0,
-        5
-    )
-);
+let state = {
+    matrix: [
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+    ],
+    size: {w: 5, h: 5},
+    mines: 5,
+    position: {x: 0, y: 0},
+    action: 0,
+    gameOver: false,
+    score: 0,
+    message: ''
+}
+
+let newState = minesweeper(state);
+
+console.log('minesweeper() =>', newState);
