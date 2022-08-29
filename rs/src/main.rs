@@ -7,6 +7,10 @@ use colored::*;
 use std::io::{stdin, stdout, Write};
 use std::usize;
 
+// const MINE: u8 = 9;
+const FLAG: u8 = 10;
+const OPEN: u8 = 20;
+
 struct Minesweeper {
     board: [u8; 81],
     cursor: usize,
@@ -18,7 +22,7 @@ struct Minesweeper {
 impl Minesweeper {
     fn new() -> Minesweeper {
         Minesweeper {
-            board: [0; 81],
+            board: [1; 81],
             cursor: 0,
             width: 9,
             height: 9,
@@ -27,7 +31,7 @@ impl Minesweeper {
     }
 
     fn control(&mut self) {
-        let cursor = self.cursor;
+        // let cursor = self.cursor;
         loop {
             match stdin().keys().next().unwrap().unwrap() {
                 Key::Esc => {
@@ -36,7 +40,7 @@ impl Minesweeper {
                     break;
                 }
                 Key::Char('a') => {
-                    if cursor % self.width == 0 {
+                    if self.cursor % self.width == 0 {
                         self.cursor += self.width - 1
                     } else {
                         self.cursor -= 1
@@ -44,7 +48,7 @@ impl Minesweeper {
                     break;
                 }
                 Key::Char('d') => {
-                    if (cursor + 1) % self.width == 0 {
+                    if (self.cursor + 1) % self.width == 0 {
                         self.cursor -= self.width - 1
                     } else {
                         self.cursor += 1
@@ -52,7 +56,7 @@ impl Minesweeper {
                     break;
                 }
                 Key::Char('w') => {
-                    if cursor < self.width {
+                    if self.cursor < self.width {
                         self.cursor += self.width * (self.height - 1)
                     } else {
                         self.cursor -= self.width
@@ -60,7 +64,7 @@ impl Minesweeper {
                     break;
                 }
                 Key::Char('s') => {
-                    if cursor >= self.width * (self.height - 1) {
+                    if self.cursor >= self.width * (self.height - 1) {
                         self.cursor -= self.width * (self.height - 1)
                     } else {
                         self.cursor += self.width
@@ -69,10 +73,18 @@ impl Minesweeper {
                 }
                 Key::Char('j') => {
                     // TODO interact
+                    if self.board[self.cursor] < FLAG {
+                        self.board[self.cursor] += OPEN;
+                    }
                     break;
                 }
                 Key::Char('k') => {
                     // TODO interact
+                    if self.board[self.cursor] < FLAG {
+                        self.board[self.cursor] += FLAG; // flag
+                    } else if self.board[self.cursor] < OPEN {
+                        self.board[self.cursor] -= FLAG; // unflag
+                    }
                     break;
                 }
                 _ => (),
@@ -81,23 +93,72 @@ impl Minesweeper {
     }
 
     fn draw(&self) {
-        print!("{}{}", termion::clear::All, termion::cursor::Goto(1, 1));
-        print!("<Minesweeper>\r\n");
+        let mut frame = String::new();
         for i in 0..self.board.len() {
             let mut left = " ";
             let mut right = " ";
-            let mut mid = format!("{}", self.board[i]);
-            if i % self.width == 0 {
-                print!("\r\n");
+            let mut mid = " ";
+            let mut end = "";
+
+            if i != 0 && (i + 1) % self.width == 0 {
+                end = "\r\n";
             }
+
             if i == self.cursor {
                 left = "<";
                 right = ">";
             }
-            let cell = format!("{}{}{}", left, mid, right);
-            print!("{}", cell.on_truecolor(128, 128, 128));
+
+            if OPEN < self.board[i] {
+                mid = match self.board[i] % 10 {
+                    1 => "1",
+                    2 => "2",
+                    3 => "3",
+                    4 => "4",
+                    5 => "5",
+                    6 => "6",
+                    7 => "7",
+                    8 => "8",
+                    9 => "#",
+                    _ => " "
+                };
+            } 
+
+            // flagged cell
+            if FLAG <= self.board[i] && self.board[i] < OPEN {
+                mid = "F";
+            }
+
+            let mut cell = format!(
+                "{}{}{}{}",
+                left.on_truecolor(128, 128, 128),
+                mid.truecolor(0, 0, 0)
+                    .on_truecolor(128, 128, 128)
+                    .bold(),
+                right.on_truecolor(128, 128, 128),
+                end
+            );
+
+            if OPEN <= self.board[i] {
+                cell = format!(
+                    "{}{}{}{}",
+                    left.on_truecolor(255, 255, 255),
+                    mid.truecolor(0, 0, 0)
+                        .on_truecolor(255, 255, 255)
+                        .bold(),
+                    right.on_truecolor(255, 255, 255),
+                    end
+                );
+            }
+
+            frame += &cell;
         }
-        print!("\r\n");
+        print!(
+            "{}{}<Minesweeper>\r\n{}\r\n",
+            termion::clear::All,
+            termion::cursor::Goto(1, 1),
+            frame
+        );
     }
 }
 
